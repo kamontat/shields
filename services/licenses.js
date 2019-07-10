@@ -6,7 +6,7 @@ const licenseTypes = {
   // permissive licenses - not public domain and not copyleft
   permissive: {
     spdxLicenseIds: [
-      'AFL-3.0',
+      'AFL-3.0 ',
       'Apache-2.0',
       'Artistic-2.0',
       'BSD-2-Clause',
