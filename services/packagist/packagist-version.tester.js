@@ -22,6 +22,14 @@ t.create('version (valid)')
     message: isPackagistVersion,
   })
 
+t.create('version (no releases)')
+  .get('/v/wsg/hello.json')
+  .expectBadge({
+    label: 'packagist',
+    message: 'no released version found',
+    color: 'red',
+  })
+
 t.create('version (invalid package name)')
   .get('/v/frodo/is-not-a-package.json')
   .expectBadge({ label: 'packagist', message: 'not found' })
@@ -32,3 +40,14 @@ t.create('pre-release version (valid)')
     label: 'packagist',
     message: isVPlusDottedVersionNClausesWithOptionalSuffix,
   })
+
+t.create('version (valid custom server)')
+  .get('/v/symfony/symfony.json?server=https%3A%2F%2Fpackagist.org')
+  .expectBadge({
+    label: 'packagist',
+    message: isPackagistVersion,
+  })
+
+t.create('version (invalid custom server)')
+  .get('/v/symfony/symfony.json?server=https%3A%2F%2Fpackagist.com')
+  .expectBadge({ label: 'packagist', message: 'not found' })

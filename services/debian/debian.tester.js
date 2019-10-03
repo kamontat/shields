@@ -19,7 +19,7 @@ t.create('Debian package (default distribution, valid, query unsafe chars)')
     message: isVPlusDottedVersionNClausesWithOptionalSuffixAndEpoch,
   })
 
-t.create('Debian package (valid, mocked response)')
+t.create('Debian package (valid)')
   .get('/apt/unstable.json')
   .intercept(nock =>
     nock('https://api.ftp-master.debian.org')
@@ -43,6 +43,21 @@ t.create('Debian package (invalid, more than one result)')
         },
         {
           apt: { unstable: { '1.8.1': { source: 'apt', component: 'main' } } },
+        },
+      ])
+  )
+  .expectBadge({ label: 'debian', message: 'invalid response data' })
+
+t.create('Debian package (invalid, requested package missing from response)')
+  .get('/apt/unstable.json')
+  .intercept(nock =>
+    nock('https://api.ftp-master.debian.org')
+      .get('/madison?f=json&s=unstable&package=apt')
+      .reply(200, [
+        {
+          other: {
+            unstable: { '1.8.0': { source: 'apt', component: 'main' } },
+          },
         },
       ])
   )

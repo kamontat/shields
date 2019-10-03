@@ -41,8 +41,27 @@ describe('The server', function() {
     )
     expect(statusCode).to.equal(301)
     expect(headers.location).to.equal(
-      'http://raster.example.com/:fruit-apple-green.png'
+      'http://raster.example.test/:fruit-apple-green.png'
     )
+  })
+
+  it('should redirect modern PNG badges as configured', async function() {
+    const { statusCode, headers } = await got(`${baseUrl}npm/v/express.png`, {
+      followRedirect: false,
+    })
+    expect(statusCode).to.equal(301)
+    expect(headers.location).to.equal(
+      'http://raster.example.test/npm/v/express.png'
+    )
+  })
+
+  it('should produce json badges', async function() {
+    const { statusCode, body, headers } = await got(
+      `${baseUrl}npm/v/express.json`
+    )
+    expect(statusCode).to.equal(200)
+    expect(headers['content-type']).to.equal('application/json')
+    expect(() => JSON.parse(body)).not.to.throw()
   })
 
   it('should preserve label case', async function() {
@@ -99,13 +118,16 @@ describe('The server', function() {
       .and.to.include('badge not found')
   })
 
-  it('should return the 404 html page for rando links', async function() {
+  it('should return the 404 badge page for rando links', async function() {
     const { statusCode, body } = await got(
       `${baseUrl}this/is/most/definitely/not/a/badge.js`,
       { throwHttpErrors: false }
     )
     expect(statusCode).to.equal(404)
-    expect(body).to.include('blood, toil, tears and sweat')
+    expect(body)
+      .to.satisfy(isSvg)
+      .and.to.include('404')
+      .and.to.include('badge not found')
   })
 
   it('should redirect the root as configured', async function() {
@@ -115,14 +137,15 @@ describe('The server', function() {
 
     expect(statusCode).to.equal(302)
     // This value is set in `config/test.yml`
-    expect(headers.location).to.equal('http://badge-server.example.com')
+    expect(headers.location).to.equal('http://frontend.example.test')
   })
 
   it('should return the 410 badge for obsolete formats', async function() {
     const { statusCode, body } = await got(`${baseUrl}npm/v/express.jpg`, {
       throwHttpErrors: false,
     })
-    expect(statusCode).to.equal(404)
+    // TODO It would be nice if this were 404 or 410.
+    expect(statusCode).to.equal(200)
     expect(body)
       .to.satisfy(isSvg)
       .and.to.include('410')

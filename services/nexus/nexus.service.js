@@ -3,12 +3,12 @@
 const Joi = require('@hapi/joi')
 const { version: versionColor } = require('../color-formatters')
 const { addv } = require('../text-formatters')
-const serverSecrets = require('../../lib/server-secrets')
-const { BaseJsonService, InvalidResponse, NotFound } = require('..')
+const { optionalUrl } = require('../validators')
 const {
   optionalDottedVersionNClausesWithOptionalSuffix,
 } = require('../validators')
 const { isSnapshotVersion } = require('./nexus-version')
+const { BaseJsonService, InvalidResponse, NotFound } = require('..')
 
 const searchApiSchema = Joi.object({
   data: Joi.array()
@@ -34,6 +34,15 @@ const resolveApiSchema = Joi.object({
   }).required(),
 }).required()
 
+// https://repository.sonatype.org/nexus-restlet1x-plugin/default/docs/path__artifact_maven_resolve.html
+// https://repository.sonatype.org/nexus-indexer-lucene-plugin/default/docs/path__lucene_search.html
+const queryParamSchema = Joi.object({
+  server: optionalUrl.required(),
+  queryOpt: Joi.string()
+    .regex(/(:(?:q|g|a|v|p|c|cn|sha1|from|count|repositoryId|e|r)=[\w-. ]+)+/i)
+    .optional(),
+}).required()
+
 module.exports = class Nexus extends BaseJsonService {
   static get category() {
     return 'version'
@@ -42,23 +51,26 @@ module.exports = class Nexus extends BaseJsonService {
   static get route() {
     return {
       base: 'nexus',
-      // API pattern:
-      // /nexus/(r|s|<repo-name>)/(http|https)/<nexus.host>[:port][/<entry-path>]/<group>/<artifact>[:k1=v1[:k2=v2[...]]]
-      pattern:
-        ':repo(r|s|[^/]+)/:scheme(http|https)/:hostAndPath+/:groupId/:artifactId([^/:]+):queryOpt(:.+)?',
+      pattern: ':repo(r|s|[^/]+)/:groupId/:artifactId',
+      queryParamSchema,
     }
+  }
+
+  static get auth() {
+    return { userKey: 'nexus_user', passKey: 'nexus_pass' }
   }
 
   static get examples() {
     return [
       {
         title: 'Sonatype Nexus (Releases)',
-        pattern: 'r/:scheme(http|https)/:hostAndPath/:groupId/:artifactId',
+        pattern: 'r/:groupId/:artifactId',
         namedParams: {
-          scheme: 'https',
-          hostAndPath: 'oss.sonatype.org',
           groupId: 'com.google.guava',
           artifactId: 'guava',
+        },
+        queryParams: {
+          server: 'https://oss.sonatype.org',
         },
         staticPreview: this.render({
           version: 'v27.0.1-jre',
@@ -66,12 +78,13 @@ module.exports = class Nexus extends BaseJsonService {
       },
       {
         title: 'Sonatype Nexus (Snapshots)',
-        pattern: 's/:scheme(http|https)/:hostAndPath/:groupId/:artifactId',
+        pattern: 's/:groupId/:artifactId',
         namedParams: {
-          scheme: 'https',
-          hostAndPath: 'oss.sonatype.org',
           groupId: 'com.google.guava',
           artifactId: 'guava',
+        },
+        queryParams: {
+          server: 'https://oss.sonatype.org',
         },
         staticPreview: this.render({
           version: 'v24.0-SNAPSHOT',
@@ -79,13 +92,14 @@ module.exports = class Nexus extends BaseJsonService {
       },
       {
         title: 'Sonatype Nexus (Repository)',
-        pattern: ':repo/:scheme(http|https)/:hostAndPath/:groupId/:artifactId',
+        pattern: ':repo/:groupId/:artifactId',
         namedParams: {
           repo: 'developer',
-          scheme: 'https',
-          hostAndPath: 'repository.jboss.org/nexus',
           groupId: 'ai.h2o',
           artifactId: 'h2o-automl',
+        },
+        queryParams: {
+          server: 'https://repository.jboss.org/nexus',
         },
         staticPreview: this.render({
           version: '3.22.0.2',
@@ -93,14 +107,14 @@ module.exports = class Nexus extends BaseJsonService {
       },
       {
         title: 'Sonatype Nexus (Query Options)',
-        pattern:
-          ':repo/:scheme(http|https)/:hostAndPath/:groupId/:artifactId/:queryOpt',
+        pattern: ':repo/:groupId/:artifactId',
         namedParams: {
           repo: 'fs-public-snapshots',
-          scheme: 'https',
-          hostAndPath: 'repository.jboss.org/nexus',
           groupId: 'com.progress.fuse',
           artifactId: 'fusehq',
+        },
+        queryParams: {
+          server: 'https://repository.jboss.org/nexus',
           queryOpt: ':c=agent-apple-osx:p=tar.gz',
         },
         staticPreview: this.render({
@@ -143,13 +157,13 @@ module.exports = class Nexus extends BaseJsonService {
     })
   }
 
-  async fetch({ repo, scheme, hostAndPath, groupId, artifactId, queryOpt }) {
+  async fetch({ server, repo, groupId, artifactId, queryOpt }) {
     const qs = {
       g: groupId,
       a: artifactId,
     }
     let schema
-    let url = `${scheme}://${hostAndPath}/`
+    let url = `${server}${server.slice(-1) === '/' ? '' : '/'}`
     // API pattern:
     // for /nexus/[rs]/... pattern, use the search api of the nexus server, and
     // for /nexus/<repo-name>/... pattern, use the resolve api of the nexus server.
@@ -167,19 +181,10 @@ module.exports = class Nexus extends BaseJsonService {
       this.addQueryParamsToQueryString({ qs, queryOpt })
     }
 
-    const options = { qs }
-
-    if (serverSecrets.nexus_user) {
-      options.auth = {
-        user: serverSecrets.nexus_user,
-        pass: serverSecrets.nexus_pass,
-      }
-    }
-
     const json = await this._requestJson({
       schema,
       url,
-      options,
+      options: { qs, auth: this.authHelper.basicAuth },
       errorMessages: {
         404: 'artifact not found',
       },
@@ -219,11 +224,10 @@ module.exports = class Nexus extends BaseJsonService {
     }
   }
 
-  async handle({ repo, scheme, hostAndPath, groupId, artifactId, queryOpt }) {
+  async handle({ repo, groupId, artifactId }, { server, queryOpt }) {
     const { json } = await this.fetch({
       repo,
-      scheme,
-      hostAndPath,
+      server,
       groupId,
       artifactId,
       queryOpt,

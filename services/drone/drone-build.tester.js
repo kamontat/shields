@@ -3,20 +3,25 @@
 const Joi = require('@hapi/joi')
 const { isBuildStatus } = require('../build-status')
 const t = (module.exports = require('../tester').createServiceTester())
-const { mockDroneCreds, token, restore } = require('./drone-test-helpers')
+
+const isDroneBuildStatus = Joi.alternatives().try(
+  isBuildStatus,
+  Joi.equal('none'),
+  Joi.equal('killed')
+)
 
 t.create('cloud-hosted build status on default branch')
   .get('/drone/drone.json')
   .expectBadge({
     label: 'build',
-    message: Joi.alternatives().try(isBuildStatus, Joi.equal('none')),
+    message: isDroneBuildStatus,
   })
 
 t.create('cloud-hosted build status on named branch')
   .get('/drone/drone/master.json')
   .expectBadge({
     label: 'build',
-    message: Joi.alternatives().try(isBuildStatus, Joi.equal('none')),
+    message: isDroneBuildStatus,
   })
 
 t.create('cloud-hosted build status on unknown repo')
@@ -27,35 +32,27 @@ t.create('cloud-hosted build status on unknown repo')
   })
 
 t.create('self-hosted build status on default branch')
-  .before(mockDroneCreds)
   .get('/badges/shields.json?server=https://drone.shields.io')
   .intercept(nock =>
-    nock('https://drone.shields.io/api/repos', {
-      reqheaders: { authorization: `Bearer ${token}` },
-    })
+    nock('https://drone.shields.io/api/repos')
       .get('/badges/shields/builds/latest')
       .reply(200, { status: 'success' })
   )
-  .finally(restore)
   .expectBadge({
     label: 'build',
     message: 'passing',
   })
 
 t.create('self-hosted build status on named branch')
-  .before(mockDroneCreds)
   .get(
     '/badges/shields/feat/awesome-thing.json?server=https://drone.shields.io'
   )
   .intercept(nock =>
-    nock('https://drone.shields.io/api/repos', {
-      reqheaders: { authorization: `Bearer ${token}` },
-    })
+    nock('https://drone.shields.io/api/repos')
       .get('/badges/shields/builds/latest')
       .query({ ref: 'refs/heads/feat/awesome-thing' })
       .reply(200, { status: 'success' })
   )
-  .finally(restore)
   .expectBadge({
     label: 'build',
     message: 'passing',

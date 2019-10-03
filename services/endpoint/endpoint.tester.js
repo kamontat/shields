@@ -4,7 +4,7 @@ const { expect } = require('chai')
 const { getShieldsIcon } = require('../../lib/logos')
 const t = (module.exports = require('../tester').createServiceTester())
 
-t.create('Valid schema (mocked)')
+t.create('Valid schema')
   .get('.json?url=https://example.com/badge')
   .intercept(nock =>
     nock('https://example.com/')
@@ -133,7 +133,7 @@ t.create('logoWidth')
     logoWidth: 30,
   })
 
-t.create('Invalid schema (mocked)')
+t.create('Invalid schema)')
   .get('.json?url=https://example.com/badge')
   .intercept(nock =>
     nock('https://example.com/')
@@ -144,10 +144,10 @@ t.create('Invalid schema (mocked)')
   )
   .expectBadge({
     label: 'custom badge',
-    message: 'invalid properties: schemaVersion',
+    message: 'invalid properties: schemaVersion, label, message',
   })
 
-t.create('Invalid schema (mocked)')
+t.create('Invalid schema)')
   .get('.json?url=https://example.com/badge')
   .intercept(nock =>
     nock('https://example.com/')
@@ -286,3 +286,11 @@ t.create('Bad scheme')
 t.create('Blocked domain')
   .get('.json?url=https://img.shields.io/badge/foo-bar-blue.json')
   .expectBadge({ label: 'custom badge', message: 'domain is blocked' })
+
+// https://github.com/badges/shields/issues/3780
+t.create('Invalid url')
+  .get('.json?url=https:/')
+  .expectBadge({
+    label: 'custom badge',
+    message: 'invalid query parameter: url',
+  })

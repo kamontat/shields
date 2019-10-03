@@ -1,8 +1,13 @@
 'use strict'
 
 const Joi = require('@hapi/joi')
-const { BaseService, BaseJsonService, NotFound } = require('..')
 const { metric } = require('../text-formatters')
+const { optionalUrl } = require('../validators')
+const { BaseService, BaseJsonService, NotFound } = require('..')
+
+const queryParamSchema = Joi.object({
+  url: optionalUrl.required(),
+}).required()
 
 class TwitterUrl extends BaseService {
   static get category() {
@@ -11,8 +16,9 @@ class TwitterUrl extends BaseService {
 
   static get route() {
     return {
-      base: 'twitter/url',
-      pattern: ':protocol(https|http)/:hostAndPath+',
+      base: 'twitter',
+      pattern: 'url',
+      queryParamSchema,
     }
   }
 
@@ -20,9 +26,9 @@ class TwitterUrl extends BaseService {
     return [
       {
         title: 'Twitter URL',
-        namedParams: {
-          protocol: 'http',
-          hostAndPath: 'shields.io',
+        namedParams: {},
+        queryParams: {
+          url: 'https://shields.io',
         },
         // hard code the static preview
         // because link[] is not allowed in examples
@@ -41,8 +47,8 @@ class TwitterUrl extends BaseService {
     }
   }
 
-  async handle({ protocol, hostAndPath }) {
-    const page = encodeURIComponent(`${protocol}://${hostAndPath}`)
+  async handle(_routeParams, { url }) {
+    const page = encodeURIComponent(`${url}`)
     return {
       label: 'tweet',
       message: '',
@@ -100,8 +106,10 @@ class TwitterFollow extends BaseJsonService {
       message: metric(followers),
       style: 'social',
       link: [
-        `https://twitter.com/intent/follow?screen_name=${user}`,
-        `https://twitter.com/${user}/followers`,
+        `https://twitter.com/intent/follow?screen_name=${encodeURIComponent(
+          user
+        )}`,
+        `https://twitter.com/${encodeURIComponent(user)}/followers`,
       ],
     }
   }
@@ -116,7 +124,7 @@ class TwitterFollow extends BaseJsonService {
 
   async handle({ user }) {
     const data = await this.fetch({ user })
-    if (data.length === 0) {
+    if (!Array.isArray(data) || data.length === 0) {
       throw new NotFound({ prettyMessage: 'invalid user' })
     }
     return this.constructor.render({ user, followers: data[0].followers_count })

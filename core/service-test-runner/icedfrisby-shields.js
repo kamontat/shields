@@ -1,4 +1,7 @@
 'use strict'
+/**
+ * @module
+ */
 
 const Joi = require('@hapi/joi')
 const { expect } = require('chai')
@@ -7,7 +10,10 @@ const { expect } = require('chai')
  * Factory which wraps an "icedfrisby-nock" with some additional functionality:
  * - check if a request was intercepted
  * - set expectations on the badge JSON response
+ *
+ * @param {Function} superclass class to extend
  * @see https://github.com/paulmelnikow/icedfrisby-nock/blob/master/icedfrisby-nock.js
+ * @returns {Function} wrapped class
  */
 const factory = superclass =>
   class IcedFrisbyNock extends superclass {
@@ -46,12 +52,23 @@ const factory = superclass =>
     }
 
     static _expectField(json, name, expected) {
-      if (typeof expected === 'string') {
+      if (typeof expected === 'undefined') return
+      if (typeof expected === 'string' || typeof expected === 'number') {
         expect(json[name], `${name} mismatch`).to.equal(expected)
       } else if (Array.isArray(expected)) {
         expect(json[name], `${name} mismatch`).to.deep.equal(expected)
-      } else if (typeof expected === 'object') {
+      } else if (Joi.isSchema(expected)) {
         Joi.attempt(json[name], expected, `${name} mismatch:`)
+      } else if (expected instanceof RegExp) {
+        Joi.attempt(
+          json[name],
+          Joi.string().regex(expected),
+          `${name} mismatch:`
+        )
+      } else {
+        throw new Error(
+          "'expected' must be a string, a number, a regex, an array or a Joi schema"
+        )
       }
     }
   }

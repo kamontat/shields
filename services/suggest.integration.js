@@ -3,7 +3,7 @@
 const { expect } = require('chai')
 const Camp = require('camp')
 const portfinder = require('portfinder')
-const serverSecrets = require('../lib/server-secrets')
+const config = require('config').util.toObject()
 const got = require('../core/got-test-client')
 const { setRoutes } = require('./suggest')
 const GithubApiProvider = require('./github/github-api-provider')
@@ -13,7 +13,7 @@ describe('GitHub badge suggestions', function() {
 
   let token, apiProvider
   before(function() {
-    token = serverSecrets.gh_token
+    token = config.private.gh_token
     if (!token) {
       throw Error('The integration tests require a gh_token to be set')
     }
@@ -101,12 +101,11 @@ describe('GitHub badge suggestions', function() {
             link:
               'https://twitter.com/intent/tweet?text=Wow:&url=https%3A%2F%2Fgithub.com%2Fatom%2Fatom',
             example: {
-              pattern: '/twitter/url/:protocol(https|http)/:hostAndPath+',
-              namedParams: {
-                protocol: 'https',
-                hostAndPath: 'github.com/atom/atom',
+              pattern: '/twitter/url',
+              namedParams: {},
+              queryParams: {
+                url: 'https://github.com/atom/atom',
               },
-              queryParams: {},
             },
             preview: {
               style: 'social',
@@ -173,12 +172,11 @@ describe('GitHub badge suggestions', function() {
             link:
               'https://twitter.com/intent/tweet?text=Wow:&url=https%3A%2F%2Fgithub.com%2Fbadges%2Fnot-a-real-project',
             example: {
-              pattern: '/twitter/url/:protocol(https|http)/:hostAndPath+',
-              namedParams: {
-                protocol: 'https',
-                hostAndPath: 'github.com/badges/not-a-real-project',
+              pattern: '/twitter/url',
+              namedParams: {},
+              queryParams: {
+                url: 'https://github.com/badges/not-a-real-project',
               },
-              queryParams: {},
             },
             preview: {
               style: 'social',

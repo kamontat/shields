@@ -7,12 +7,12 @@ const { BaseYamlService, InvalidResponse } = require('..')
 
 const schema = Joi.object({
   CurrentVersion: Joi.alternatives()
-    .try(Joi.number(), Joi.string())
+    .try(Joi.string(), Joi.number())
     .required(),
 }).required()
 
 const queryParamSchema = Joi.object({
-  metadata_format: Joi.string().valid(['yml', 'txt']),
+  metadata_format: Joi.string().valid('yml', 'txt'),
 }).required()
 
 module.exports = class FDroid extends BaseYamlService {

@@ -1,11 +1,13 @@
 'use strict'
 
-const { BaseService } = require('..')
+const Joi = require('@hapi/joi')
+const { optionalUrl } = require('../validators')
 const {
   queryParamSchema,
   exampleQueryParams,
   renderWebsiteStatus,
 } = require('../website-status')
+const { BaseService } = require('..')
 
 const documentation = `
 <p>
@@ -27,6 +29,10 @@ const documentation = `
 </p>
 `
 
+const urlQueryParamSchema = Joi.object({
+  url: optionalUrl.required(),
+}).required()
+
 module.exports = class Website extends BaseService {
   static get category() {
     return 'monitoring'
@@ -34,9 +40,9 @@ module.exports = class Website extends BaseService {
 
   static get route() {
     return {
-      base: 'website',
-      pattern: ':protocol(https|http)/:hostAndPath+',
-      queryParamSchema,
+      base: '',
+      pattern: 'website',
+      queryParamSchema: queryParamSchema.concat(urlQueryParamSchema),
     }
   }
 
@@ -44,11 +50,11 @@ module.exports = class Website extends BaseService {
     return [
       {
         title: 'Website',
-        namedParams: {
-          protocol: 'https',
-          hostAndPath: 'shields.io',
+        namedParams: {},
+        queryParams: {
+          ...exampleQueryParams,
+          ...{ url: 'https://shields.io' },
         },
-        queryParams: exampleQueryParams,
         staticPreview: renderWebsiteStatus({ isUp: true }),
         documentation,
       },
@@ -62,12 +68,13 @@ module.exports = class Website extends BaseService {
   }
 
   async handle(
-    { protocol, hostAndPath },
+    _routeParams,
     {
       up_message: upMessage,
       down_message: downMessage,
       up_color: upColor,
       down_color: downColor,
+      url,
     }
   ) {
     let isUp
@@ -75,7 +82,7 @@ module.exports = class Website extends BaseService {
       const {
         res: { statusCode },
       } = await this._request({
-        url: `${protocol}://${hostAndPath}`,
+        url,
         options: {
           method: 'HEAD',
         },

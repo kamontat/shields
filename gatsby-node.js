@@ -1,6 +1,6 @@
 'use strict'
 
-/**
+/*
  * Implement Gatsby's Node APIs in this file.
  *
  * See: https://www.gatsbyjs.org/docs/node-apis/
@@ -23,7 +23,9 @@ async function createPages({ actions: { createPage } }) {
   if (includeDevPages) {
     createPage({
       path: '/dev/logos',
-      component: require.resolve('./frontend/components/development/logo-page'),
+      component: require.resolve(
+        './frontend/components/development/logo-page.tsx'
+      ),
     })
   }
 
@@ -31,7 +33,7 @@ async function createPages({ actions: { createPage } }) {
     const { id } = category
     createPage({
       path: `/category/${id}`,
-      component: require.resolve('./frontend/components/main'),
+      component: require.resolve('./frontend/components/main.tsx'),
       // `context` provided here becomes `props.pageContext` on the page.
       context: { category },
     })

@@ -2,13 +2,14 @@
 
 const Joi = require('@hapi/joi')
 const { renderVersionBadge } = require('../version')
-const { NotFound } = require('..')
 const NpmBase = require('./npm-base')
+const { NotFound } = require('..')
 
 const keywords = ['node']
 
 // Joi.string should be a semver.
 const schema = Joi.object()
+  .keys({ latest: Joi.string().required() })
   .pattern(/./, Joi.string())
   .required()
 

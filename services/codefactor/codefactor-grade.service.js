@@ -1,11 +1,11 @@
 'use strict'
 
 const Joi = require('@hapi/joi')
+const { isValidGrade, gradeColor } = require('./codefactor-helpers')
 const { BaseSvgScrapingService } = require('..')
-const { letterGrades } = require('./codefactor-helpers')
 
 const schema = Joi.object({
-  message: Joi.allow(...Object.keys(letterGrades)),
+  message: isValidGrade,
 }).required()
 
 module.exports = class CodeFactorGrade extends BaseSvgScrapingService {
@@ -44,7 +44,7 @@ module.exports = class CodeFactorGrade extends BaseSvgScrapingService {
   static render({ grade }) {
     return {
       message: grade,
-      color: letterGrades[grade].color,
+      color: gradeColor(grade),
     }
   }
 

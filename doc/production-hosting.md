@@ -7,26 +7,32 @@
 [operations issues]: https://github.com/badges/shields/issues?q=is%3Aissue+is%3Aopen+label%3Aoperations
 [ops discord]: https://discordapp.com/channels/308323056592486420/480747695879749633
 
-| Component                     | Subcomponent                | People with access                                                                         |
-| ----------------------------- | --------------------------- | ------------------------------------------------------------------------------------------ |
-| Badge servers                 | Account owner               | @espadrine                                                                                 |
-| Badge servers                 | ssh, logs                   | @espadrine                                                                                 |
-| Badge servers                 | Deployment                  | @espadrine, @paulmelnikow                                                                  |
-| Badge servers                 | Admin endpoints             | @espadrine, @paulmelnikow                                                                  |
-| Zeit Now                      | Team owner                  | @paulmelnikow                                                                              |
-| Zeit Now                      | Team members                | @paulmelnikow, @chris48s, @calebcartwright, @platan                                        |
-| Raster server                 | Full access as team members | @paulmelnikow, @chris48s, @calebcartwright, @platan                                        |
-| shields-server.com redirector | Full access as team members | @paulmelnikow, @chris48s, @calebcartwright, @platan                                        |
-| Cloudflare                    | Account owner               | @espadrine                                                                                 |
-| Cloudflare                    | Admin access                | @espadrine, @paulmelnikow                                                                  |
-| GitHub                        | OAuth app                   | @espadrine ([could be transferred to the badges org][oauth transfer])                      |
-| DNS                           | Account owner               | @olivierlacan                                                                              |
-| DNS                           | Read-only account access    | @espadrine, @paulmelnikow, @chris48s                                                       |
-| Sentry                        | Error reports               | @espadrine, @paulmelnikow                                                                  |
-| Frontend                      | Deployment                  | Technically anyone with push access but in practice must be deployed with the badge server |
-| Metrics server                | Owner                       | @platan                                                                                    |
-| UptimeRobot                   | Account owner               | @paulmelnikow                                                                              |
-| More metrics                  | Owner                       | @RedSparr0w                                                                                |
+| Component                     | Subcomponent                    | People with access                                                                         |
+| ----------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------ |
+| Badge servers                 | Account owner                   | @espadrine                                                                                 |
+| Badge servers                 | ssh, logs                       | @espadrine                                                                                 |
+| Badge servers                 | Deployment                      | @espadrine, @paulmelnikow                                                                  |
+| Badge servers                 | Admin endpoints                 | @espadrine, @paulmelnikow                                                                  |
+| Compose.io Redis              | Account owner                   | @paulmelnikow                                                                              |
+| Compose.io Redis              | Account access                  | @paulmelnikow                                                                              |
+| Compose.io Redis              | Database connection credentials | @espadrine, @paulmelnikow                                                                  |
+| Zeit Now                      | Team owner                      | @paulmelnikow                                                                              |
+| Zeit Now                      | Team members                    | @paulmelnikow, @chris48s, @calebcartwright, @platan                                        |
+| Raster server                 | Full access as team members     | @paulmelnikow, @chris48s, @calebcartwright, @platan                                        |
+| shields-server.com redirector | Full access as team members     | @paulmelnikow, @chris48s, @calebcartwright, @platan                                        |
+| Cloudflare                    | Account owner                   | @espadrine                                                                                 |
+| Cloudflare                    | Admin access                    | @espadrine, @paulmelnikow                                                                  |
+| GitHub                        | OAuth app                       | @espadrine ([could be transferred to the badges org][oauth transfer])                      |
+| Twitch                        | OAuth app                       | @PyvesB                                                                                    |
+| OpenStreetMap (for Wheelmap)  | Account owner                   | @paulmelnikow                                                                              |
+| DNS                           | Account owner                   | @olivierlacan                                                                              |
+| DNS                           | Read-only account access        | @espadrine, @paulmelnikow, @chris48s                                                       |
+| Sentry                        | Error reports                   | @espadrine, @paulmelnikow                                                                  |
+| Frontend                      | Deployment                      | Technically anyone with push access but in practice must be deployed with the badge server |
+| Metrics server                | Owner                           | @platan                                                                                    |
+| UptimeRobot                   | Account owner                   | @paulmelnikow                                                                              |
+| More metrics                  | Owner                           | @RedSparr0w                                                                                |
+| Netlify (documentation site)  | Owner                           | @chris48s                                                                                  |
 
 There are [too many bottlenecks][issue 2577]!
 
@@ -36,9 +42,9 @@ There are three public badge servers on OVH VPS’s.
 
 | Cname                       | Hostname             | Type | IP             | Location           |
 | --------------------------- | -------------------- | ---- | -------------- | ------------------ |
-| [s0.shields-server.com][s0] | vps71670.vps.ovh.ca  | VPS  | 192.99.59.72   | Quebec, Canada     |
-| [s1.shields-server.com][s1] | vps244529.ovh.net    | VPS  | 51.254.114.150 | Gravelines, France |
-| [s2.shields-server.com][s2] | vps117870.vps.ovh.ca | VPS  | 149.56.96.133  | Quebec, Canada     |
+| [s0.servers.shields.io][s0] | vps71670.vps.ovh.ca  | VPS  | 192.99.59.72   | Quebec, Canada     |
+| [s1.servers.shields.io][s1] | vps244529.ovh.net    | VPS  | 51.254.114.150 | Gravelines, France |
+| [s2.servers.shields.io][s2] | vps117870.vps.ovh.ca | VPS  | 149.56.96.133  | Quebec, Canada     |
 
 - These are single-core virtual hosts with 2 GB RAM [VPS SSD 1][].
 - The Node version (v9.4.0 at time of writing) and dependency versions on the
@@ -56,9 +62,9 @@ There are three public badge servers on OVH VPS’s.
 - The public servers _do not_ use docker. The `Dockerfile` is included for
   self-hosting (including on a Docker-capable PaaS).
 
-[s0]: https://s0.shields-server.com/index.html
-[s1]: https://s1.shields-server.com/index.html
-[s2]: https://s2.shields-server.com/index.html
+[s0]: https://s0.servers.shields.io/index.html
+[s1]: https://s1.servers.shields.io/index.html
+[s2]: https://s2.servers.shields.io/index.html
 [vps ssd 1]: https://www.ovh.com/world/vps/vps-ssd.xml
 [issue 1460]: https://github.com/badges/shields/issues/1460
 [serverscript]: https://github.com/badges/ServerScript
@@ -67,8 +73,8 @@ There are three public badge servers on OVH VPS’s.
 
 Shields has mercifully little persistent state:
 
-1.  The GitHub tokens we collect are saved on each server in JSON files on disk.
-    They can be fetched from the [GitHub auth admin endpoint][] for debugging.
+1.  The GitHub tokens we collect are saved on each server in a cloud Redis database.
+    They can also be fetched from the [GitHub auth admin endpoint][] for debugging.
 2.  The server keeps a few caches in memory. These are neither persisted nor
     inspectable.
     - The [request cache][]
@@ -149,9 +155,9 @@ To set things up for deployment:
 3.  Add remotes:
 
 ```sh
-git remote add s0 root@s0.shields-server.com:/home/m/shields.git
-git remote add s1 root@s1.shields-server.com:/home/m/shields.git
-git remote add s2 root@s2.shields-server.com:/home/m/shields.git
+git remote add s0 root@s0.servers.shields.io:/home/m/shields.git
+git remote add s1 root@s1.servers.shields.io:/home/m/shields.git
+git remote add s2 root@s2.servers.shields.io:/home/m/shields.git
 ```
 
 `origin` should point to GitHub as usual.

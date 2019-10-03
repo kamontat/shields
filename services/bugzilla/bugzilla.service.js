@@ -1,8 +1,8 @@
 'use strict'
 
 const Joi = require('@hapi/joi')
-const { BaseJsonService } = require('..')
 const { optionalUrl } = require('../validators')
+const { BaseJsonService } = require('..')
 
 const queryParamSchema = Joi.object({
   baseUrl: optionalUrl,
@@ -13,7 +13,9 @@ const schema = Joi.object({
     .items(
       Joi.object({
         status: Joi.string().required(),
-        resolution: Joi.string().required(),
+        resolution: Joi.string()
+          .allow('')
+          .required(),
       }).required()
     )
     .min(1)

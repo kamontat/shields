@@ -2,8 +2,9 @@
 
 const Joi = require('@hapi/joi')
 const { coveragePercentage } = require('../color-formatters')
-const { InvalidResponse } = require('..')
+const { optionalUrl } = require('../validators')
 const TeamCityBase = require('./teamcity-base')
+const { InvalidResponse } = require('..')
 
 const buildStatisticsSchema = Joi.object({
   property: Joi.array()
@@ -16,6 +17,10 @@ const buildStatisticsSchema = Joi.object({
     .required(),
 }).required()
 
+const queryParamSchema = Joi.object({
+  server: optionalUrl,
+}).required()
+
 module.exports = class TeamCityCoverage extends TeamCityBase {
   static get category() {
     return 'coverage'
@@ -24,33 +29,23 @@ module.exports = class TeamCityCoverage extends TeamCityBase {
   static get route() {
     return {
       base: 'teamcity/coverage',
-      format: '(?:(http|https)/(.+)/)?([^/]+)',
-      capture: ['protocol', 'hostAndPath', 'buildId'],
+      pattern: ':buildId',
+      queryParamSchema,
     }
   }
 
   static get examples() {
     return [
       {
-        title: 'TeamCity Coverage (CodeBetter)',
-        pattern: ':buildId',
+        title: 'TeamCity Coverage',
         namedParams: {
           buildId: 'ReactJSNet_PullRequests',
+        },
+        queryParams: {
+          server: 'https://teamcity.jetbrains.com',
         },
         staticPreview: this.render({
           coverage: 82,
-        }),
-      },
-      {
-        title: 'TeamCity Coverage',
-        pattern: ':protocol/:hostAndPath/s/:buildId',
-        namedParams: {
-          protocol: 'https',
-          hostAndPath: 'https/teamcity.jetbrains.com',
-          buildId: 'ReactJSNet_PullRequests',
-        },
-        staticPreview: this.render({
-          coverage: 95,
         }),
       },
     ]
@@ -88,16 +83,14 @@ module.exports = class TeamCityCoverage extends TeamCityBase {
     throw new InvalidResponse({ prettyMessage: 'no coverage data available' })
   }
 
-  async handle({ protocol, hostAndPath, buildId }) {
+  async handle({ buildId }, { server = 'https://teamcity.jetbrains.com' }) {
     // JetBrains Docs: https://confluence.jetbrains.com/display/TCD18/REST+API#RESTAPI-Statistics
     const buildLocator = `buildType:(id:${buildId})`
     const apiPath = `app/rest/builds/${encodeURIComponent(
       buildLocator
     )}/statistics`
     const data = await this.fetch({
-      protocol,
-      hostAndPath,
-      apiPath,
+      url: `${server}/${apiPath}`,
       schema: buildStatisticsSchema,
     })
 

@@ -1,5 +1,6 @@
 'use strict'
 
+const escapeStringRegexp = require('escape-string-regexp')
 const Joi = require('@hapi/joi')
 const pathToRegexp = require('path-to-regexp')
 
@@ -13,7 +14,7 @@ const isValidRoute = Joi.object({
     .required(),
   pattern: Joi.string().allow(''),
   format: Joi.string(),
-  capture: Joi.alternatives().when('format', {
+  capture: Joi.alternatives().conditional('format', {
     is: Joi.string().required(),
     then: Joi.array().items(Joi.string().required()),
   }),
@@ -27,15 +28,16 @@ function assertValidRoute(route, message = undefined) {
 }
 
 function prepareRoute({ base, pattern, format, capture, withPng }) {
-  const extensionRegex = ['svg', 'json']
-    .concat(withPng ? ['png'] : [])
+  const extensionRegex = ['', '.svg', '.json']
+    .concat(withPng ? ['.png'] : [])
+    .map(escapeStringRegexp)
     .join('|')
   let regex, captureNames
   if (pattern === undefined) {
-    regex = new RegExp(`^${makeFullUrl(base, format)}\\.(${extensionRegex})$`)
+    regex = new RegExp(`^${makeFullUrl(base, format)}(${extensionRegex})$`)
     captureNames = capture || []
   } else {
-    const fullPattern = `${makeFullUrl(base, pattern)}.:ext(${extensionRegex})`
+    const fullPattern = `${makeFullUrl(base, pattern)}:ext(${extensionRegex})`
     const keys = []
     regex = pathToRegexp(fullPattern, keys, {
       strict: true,
@@ -67,8 +69,8 @@ function namedParamsForMatch(captureNames = [], match, ServiceClass) {
 
 function getQueryParamNames({ queryParamSchema }) {
   if (queryParamSchema) {
-    const { children, renames = [] } = Joi.describe(queryParamSchema)
-    return Object.keys(children).concat(renames.map(({ from }) => from))
+    const { keys, renames = [] } = queryParamSchema.describe()
+    return Object.keys(keys).concat(renames.map(({ from }) => from))
   } else {
     return []
   }

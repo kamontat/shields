@@ -2,15 +2,19 @@
 
 const camelcase = require('camelcase')
 const Joi = require('@hapi/joi')
-const { BaseJsonService } = require('..')
 const { metric } = require('../text-formatters')
-const { nonNegativeInteger } = require('../validators')
+const { nonNegativeInteger, optionalUrl } = require('../validators')
+const { BaseJsonService } = require('..')
 
 const schema = Joi.object({
   topic_count: nonNegativeInteger,
   user_count: nonNegativeInteger,
   post_count: nonNegativeInteger,
   like_count: nonNegativeInteger,
+}).required()
+
+const queryParamSchema = Joi.object({
+  server: optionalUrl.required(),
 }).required()
 
 class DiscourseBase extends BaseJsonService {
@@ -21,7 +25,8 @@ class DiscourseBase extends BaseJsonService {
   static buildRoute(metric) {
     return {
       base: 'discourse',
-      pattern: `:scheme(http|https)/:host/${metric}`,
+      pattern: metric,
+      queryParamSchema,
     }
   }
 
@@ -29,10 +34,10 @@ class DiscourseBase extends BaseJsonService {
     return { label: 'discourse' }
   }
 
-  async fetch({ scheme, host }) {
+  async fetch({ server }) {
     return this._requestJson({
       schema,
-      url: `${scheme}://${host}/site/statistics.json`,
+      url: `${server}/site/statistics.json`,
     })
   }
 }
@@ -53,9 +58,9 @@ function DiscourseMetricIntegrationFactory({ metricName, property }) {
       return [
         {
           title: `Discourse ${metricName}`,
-          namedParams: {
-            scheme: 'https',
-            host: 'meta.discourse.org',
+          namedParams: {},
+          queryParams: {
+            server: 'https://meta.discourse.org',
           },
           staticPreview: this.render({ stat: 100 }),
         },
@@ -69,8 +74,8 @@ function DiscourseMetricIntegrationFactory({ metricName, property }) {
       }
     }
 
-    async handle({ scheme, host }) {
-      const data = await this.fetch({ scheme, host })
+    async handle(_routeParams, { server }) {
+      const data = await this.fetch({ server })
       return this.constructor.render({ stat: data[property] })
     }
   }
@@ -85,9 +90,9 @@ class DiscourseStatus extends DiscourseBase {
     return [
       {
         title: `Discourse status`,
-        namedParams: {
-          scheme: 'https',
-          host: 'meta.discourse.org',
+        namedParams: {},
+        queryParams: {
+          server: 'https://meta.discourse.org',
         },
         staticPreview: this.render(),
       },
@@ -101,8 +106,8 @@ class DiscourseStatus extends DiscourseBase {
     }
   }
 
-  async handle({ scheme, host }) {
-    await this.fetch({ scheme, host })
+  async handle(_routeParams, { server }) {
+    await this.fetch({ server })
     // if fetch() worked, the server is up
     // if it failed, we'll show an error e.g: 'inaccessible'
     return this.constructor.render()
